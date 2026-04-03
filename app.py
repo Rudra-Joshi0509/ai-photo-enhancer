@@ -4,16 +4,29 @@ import numpy as np
 import streamlit as st
 from PIL import Image
 import io
+import streamlit.components.v1 as components
 
-#2. Page config (makes it look professional)
-st.set_page_config(page_title="AI Photo Enhancer", layout="wide")
+#2. Page setup
+st.set_page_config(page_title="✨ AI Photo Enhancer", page_icon="📸", layout="wide")
 
-st.title("✨ AI Photo Enhancer Pro")
+st.title("✨ AI Photo Enhancer")
+st.write("Enhance your images with AI-powered filters 🚀")
 
-#3. Upload image
+#3. Google Analytics
+components.html("""
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-66VX2V57GZ"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-66VX2V57GZ');
+</script>
+""", height=0)
+
+#4. Upload Image
 uploaded_file = st.file_uploader("Upload an Image", type=["jpg", "png", "jpeg"])
 
-#4. Mode selection with description
+#5. Mode Selection
 mode = st.selectbox(
     "Choose Enhancement Type",
     [
@@ -25,9 +38,6 @@ mode = st.selectbox(
         "Warm Tone (Instagram Style)"
     ]
 )
-
-#5. Show mode explanation (example idea)
-st.info(f"Selected Mode: {mode}")
 
 #6. If image uploaded
 if uploaded_file is not None:
@@ -44,7 +54,6 @@ if uploaded_file is not None:
         st.subheader("Original Image")
         st.image(image, use_column_width=True)
 
-    # Enhance button
     if st.button("🚀 Enhance Image"):
 
         #7. Mode-based settings
@@ -58,7 +67,7 @@ if uploaded_file is not None:
             h, alpha, beta, clip = 8, 1.08, 15, 3.5
         elif "High Detail" in mode:
             h, alpha, beta, clip = 6, 1.1, 5, 2.5
-        else:  # Warm Tone
+        else:
             h, alpha, beta, clip = 7, 1.05, 5, 2.0
 
         #8. Denoising
@@ -83,26 +92,24 @@ if uploaded_file is not None:
         enhanced_lab = cv2.merge((cl, a, b))
         enhanced_img = cv2.cvtColor(enhanced_lab, cv2.COLOR_LAB2BGR)
 
-        #12. Brightness/contrast
+        #12. Brightness + Contrast
         final = cv2.convertScaleAbs(enhanced_img, alpha=alpha, beta=beta)
 
-        #13. Warm tone effect
+        #13. Warm tone
         if "Warm" in mode:
-            final[:,:,2] = cv2.add(final[:,:,2], 15)  # increase red
-            final[:,:,1] = cv2.add(final[:,:,1], 5)   # slight green
+            final[:,:,2] = cv2.add(final[:,:,2], 15)
+            final[:,:,1] = cv2.add(final[:,:,1], 5)
 
         # Convert to RGB
         final_rgb = cv2.cvtColor(final, cv2.COLOR_BGR2RGB)
 
-        # Show enhanced
         with col2:
             st.subheader("Enhanced Image")
             st.image(final_rgb, use_column_width=True)
 
-        #14. Download button
+        #14. Download
         result = Image.fromarray(final_rgb)
         buf = io.BytesIO()
         result.save(buf, format="PNG")
-        byte_im = buf.getvalue()
 
-        st.download_button("📥 Download Image", data=byte_im, file_name="enhanced.png", mime="image/png")
+        st.download_button("📥 Download Image", buf.getvalue(), "enhanced.png")
